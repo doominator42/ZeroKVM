@@ -13,7 +13,7 @@ A low-cost, easy-to-build KVM-over-IP device that acts as a DisplayLink monitor.
 |Android|App required|The DisplayLink Presenter app has to be installed|
 
 ## Development status
-Implement features works well. The web client still needs a bit of polishing and better error handling.
+Implemented features works well. The web client still needs a bit of polishing and better error handling.
 
 |Feature|Status|
 |-|-|
