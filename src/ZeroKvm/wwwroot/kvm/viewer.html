@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<link rel="icon" href="data:,">
+		<meta name="viewport" content="width=device-width,initial-scale=1.0,interactive-widget=resizes-content">
+		<title>ZeroKVM</title>
+		<link rel="stylesheet" href="/kvm/main.css" />
+		<link rel="stylesheet" href="/kvm/viewer.css" />
+		<link rel="stylesheet" href="/kvm/overlay.css" />
+		<script type="module" src="/kvm/viewer.js"></script>
+	</head>
+	<body>
+		<div>
+			<div id="toolbarPanel" class="toolbar-container closed">
+				<div class="toolbar"> <!-- TODO: make buttons take full height, without borders, light colors (classic menu style) -->
+					<div>
+						<label class="checkbox" title="Ensure the screen fits inside the window">
+							<input id="fitScreenCheckbox" type="checkbox" autocomplete="off" checked /> Fit screen
+						</label>
+						<button id="toggleFullscreenButton" type="button" class="button-dark" title="Toggle fullscreen"><img src="/kvm/fullscreen.svg" /></button>
+					</div>
+					<div>
+						<label class="checkbox" title="Enable mouse input">
+							<input id="pointerEnabledCheckbox" type="checkbox" autocomplete="off" checked /> Mouse
+						</label>
+						<button type="button" class="button-dark border-none" title="Mouse options">
+							...
+						</button>
+						<div class="drop">
+							<div class="input-list">
+								<label>Device type: </label>
+								<select id="pointerTypeSelect" autocomplete="off">
+									<option value="BootMouse" selected>Relative mouse</option>
+									<option value="AbsoluteMouse" selected>Absolute mouse</option>
+								</select>
+							</div>
+							<div>
+								<label class="checkbox">
+									<input id="pointerMoveLateCheckbox" type="checkbox" autocomplete="off" /> Move only when interacting
+								</label>
+							</div>
+							<div>
+								<label class="checkbox" title="Show the local cursor over the remove one">
+									<input id="showLocalPointerCheckbox" type="checkbox" autocomplete="off" checked /> Show local cursor
+								</label>
+							</div>
+						</div>
+					</div>
+					<div>
+						<label class="checkbox" title="Enable keyboard input">
+							<input id="keyboardEnabledCheckbox" type="checkbox" autocomplete="off" checked /> Keyboard
+						</label>
+						<button type="button" class="button-dark border-none" title="Keyboard options">
+							...
+						</button>
+						<div class="drop">
+							<div class="input-list">
+								<label>Host layout: </label>
+								<select id="keyboardLayoutSelect" autocomplete="off" style="width: 200px">
+									<option value="" selected>(Please select)</option>
+								</select>
+								<!-- TODO <label>Unicode input: </label>
+								<select id="unicodeInputTypeSelect" autocomplete="off" style="width: 200px">
+									<option value="" selected>Unknown</option>
+									<option value="RightAltNum">Windows: RightAlt+Numpad</option>
+									<option value="RightAltHexNum">Windows: RightAlt+HexNumpad</option>
+									<option value="CtrlShiftU">Linux: Ctrl+Shift+U</option>
+									<option value="LeftAltNum">Mac: LeftAlt+Numpad</option>
+								</select>-->
+							</div>
+							<hr />
+							<div>
+								<textarea id="sendTextInput" class="full-width" rows="3"></textarea>
+								<button id="sendTextButton" type="button" class="button-dark border-none full-width">
+									Send as keystrokes
+								</button>
+							</div>
+						</div>
+					</div>
+					<div>
+						<button type="button" class="button-dark border-none">
+							Options
+						</button>
+						<div class="drop">
+							<fieldset>
+								<legend>Video</legend>
+								<div class="input-list">
+									<label>
+										Subsampling:
+									</label>
+									<select id="mjpegSubsamplingSelect" autocomplete="off">
+										<option value="444">4:4:4 (best quality)</option>
+										<option value="440">4:4:0</option>
+										<option value="422">4:2:2</option>
+										<option value="420" selected>4:2:0 (best performance)</option>
+										<option value="Gray">Grayscale</option>
+									</select>
+									<label>
+										JPEG Quality:
+									</label>
+									<span>
+										<input id="mjpegQualityInput" type="number" autocomplete="off" min="1" max="100" step="1" value="90" /> %
+									</span>
+								</div>
+							</fieldset>
+							<fieldset>
+								<legend>Overlay</legend>
+								<div class="input-list">
+									<label>
+										Style:
+									</label>
+									<select id="overlayStyleSelect" autocomplete="off">
+										<option value="squares" selected>Squares</option>
+										<option value="slim">Slim</option>
+									</select>
+									<label>
+										Position:
+									</label>
+									<select id="overlayPositionSelect" autocomplete="off">
+										<option value="left">Left</option>
+										<option value="top">Top</option>
+										<option value="right">Right</option>
+										<option value="bottom">Bottom</option>
+									</select>
+								</div>
+							</fieldset>
+						</div>
+					</div>
+					<div>
+						<button id="detachUsbButton" type="button" class="button-dark border-none">
+							Disconnect USB
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<main>
+			<div id="screenContainer" class="screen-container">
+				<canvas id="screenCanvas" class="screen" tabindex="-1"></canvas>
+				<div id="overlayArea" class="overlay-area squares left">
+					<div id="overlayContainer" class="overlay">
+						<div class="overlay-buttons">
+							<button type="button" data-vkey="ControlLeft:toggle" title="Toggle the left Control key">Ctrl</button>
+							<button type="button" data-vkey="AltLeft:toggle" title="Toggle the left Alt key">Alt</button>
+							<button type="button" data-vkey="MetaLeft:toggle" title="Toggle the left Meta key">Meta</button>
+							<button type="button" data-vkey="Escape" title="Press the Escape key">Esc</button>
+							<button type="button" data-vkey="ControlLeft+AltLeft+Delete" title="Send Control+Alt+Delete">
+								<span class="squares">C+A<br/>Del</span>
+								<span class="slim">Ctrl+Alt+Del</span>
+							</button>
+							<button id="capsLockButton" type="button" data-vkey="CapsLock" title="Press the Caps Lock key">
+								<span class="squares">Caps<br/>Lock</span>
+								<span class="slim">Caps</span>
+							</button>
+							<button id="numLockButton" type="button" data-vkey="NumLock" title="Press the Num Lock key">
+								<span class="squares">Num<br/>Lock</span>
+								<span class="slim">Num</span>
+							</button>
+							<button id="showToolbarButton" type="button" title="Show/Hide toolbar"><img src="/kvm/three-dots.svg" /></button>
+						</div>
+						<button id="overlayGripButton" type="button" class="overlay-grip" draggable="true"><img src="/kvm/arrow.svg" /></button>
+					</div>
+				</div>
+				<div class="overlay-drop-area left"></div>
+				<div class="overlay-drop-area right"></div>
+				<div class="overlay-drop-area top"></div>
+				<div class="overlay-drop-area bottom"></div>
+				<div class="blocking-overlay"><!-- TODO: connection lost status -->
+					<div class="usb-detached-status">
+						<div class="text-center">
+							USB is disconnected
+						</div>
+						<div class="text-center margin-small">
+							<button id="attachUsbButton" type="button" class="button-dark button-large">
+								Connect
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</main>
+	</body>
+</html>

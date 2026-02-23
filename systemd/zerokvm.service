@@ -1,0 +1,13 @@
+[Unit]
+Description=ZeroKVM daemon
+After=network-online.target
+Requires=sys-kernel-config.mount
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/zerokvm -l [::]:80 -l [::]:443,tls --https-redirect --cert /etc/zerokvm/cert.pem --cert-key /etc/zerokvm/key.pem --auto-create-cert
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target

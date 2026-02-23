@@ -1,0 +1,78 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <Version>0.1.0</Version>
+    <TargetName>zerokvm</TargetName>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PublishAot>true</PublishAot>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>full</TrimMode>
+    <DebuggerSupport>false</DebuggerSupport>
+    <EventSourceSupport>false</EventSourceSupport>
+    <Http3Support>false</Http3Support>
+    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <MetadataUpdaterSupport>false</MetadataUpdaterSupport>
+    <MetricsSupport>false</MetricsSupport>
+    <UseSizeOptimizedLinq>true</UseSizeOptimizedLinq>
+    <IlcDisableReflection>true</IlcDisableReflection>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+    <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>
+    <StripSymbols>true</StripSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../UsbFfs/UsbFfs.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="wwwroot/**" />
+    <WwwrootInputFiles Include="wwwroot/**/*.html" />
+    <WwwrootInputFiles Include="wwwroot/**/*.css" />
+    <WwwrootInputFiles Include="wwwroot/**/*.js" />
+    <WwwrootInputFiles Include="wwwroot/**/*.svg" />
+    <WwwrootOutputFiles Include="obj/wwwroot.g.cs" />
+    <Compile Include="obj/wwwroot.g.cs" />
+  </ItemGroup>
+
+  <Target Name="Wwwroot" BeforeTargets="BeforeBuild" Inputs="@(WwwrootInputFiles)" Outputs="@(WwwrootOutputFiles)">
+    <Exec
+      WorkingDirectory="$(MSBuildProjectDirectory)"
+      Command="sh ./embed-wwwroot.sh"
+    />
+  </Target>
+
+  <Target Name="devutils-wrapper" BeforeTargets="BeforeResGen" >
+    <Exec
+      WorkingDirectory="$(MSBuildProjectDirectory)"
+      Command="clang -O3 -c ./devutils-wrapper.c -o ./obj/devutils-wrapper.o"
+    />
+  </Target>
+
+  <PropertyGroup>
+    <NativeLibraryPath>/usr/lib/</NativeLibraryPath>
+    <NativeLibraryPath Condition="$(RuntimeIdentifier) == 'linux-arm64'">/usr/lib/aarch64-linux-gnu/</NativeLibraryPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <DirectPInvoke Include="libc" />
+
+    <DirectPInvoke Include="aio-wrapper" />
+    <NativeLibrary Include="$(MSBuildProjectDirectory)/../UsbFfs/obj/aio-wrapper.o" />
+    <NativeLibrary Include="$(NativeLibraryPath)libaio.a" />
+
+    <DirectPInvoke Include="devutils-wrapper" />
+    <NativeLibrary Include="$(MSBuildProjectDirectory)/obj/devutils-wrapper.o" />
+
+    <DirectPInvoke Include="libturbojpeg.so" />
+    <NativeLibrary Include="$(NativeLibraryPath)libturbojpeg.a" />
+  </ItemGroup>
+</Project>

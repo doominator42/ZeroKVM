@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+	<path fill="#fff" stroke="none" d="M 1,1 H 8 L 1,8 Z" />
+  <path fill="#fff" stroke="none" d="m 12,1 h 7 v 7 z" />
+  <path fill="#fff" stroke="none" d="m 19,12 v 7 h -7 z" />
+  <path fill="#fff" stroke="none" d="M 8,19 H 1 v -7 z" />
+</svg>

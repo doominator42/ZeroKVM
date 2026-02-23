@@ -1,0 +1,104 @@
+.toolbar-container {
+	overflow-x: auto;
+	background-color: #222;
+	display: flex;
+	flex-direction: row;
+	justify-content: space-around;
+}
+
+.toolbar-container.closed {
+	display: none;
+}
+
+.toolbar {
+	display: flex;
+	flex-direction: row;
+	min-width: max-content;
+	background-color: #fff;
+}
+
+.toolbar > * {
+	padding: 2px 10px;
+}
+
+.toolbar > *:not(:first-child) {
+	border-left: 1px solid #ccc;
+}
+
+.screen-container {
+	display: grid;
+	grid-template: 100% / 100%;
+	background-color: #222;
+	height: 100%;
+}
+
+.screen-container:not(.fit-screen) {
+	overflow: auto;
+}
+
+.screen-container.fit-screen > .screen {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+.screen {
+	position: relative;
+	display: flex;
+	margin: auto;
+	background-color: #000;
+	appearance: none;
+	border: none;
+	outline: none;
+	box-shadow: none;
+	color: transparent;
+	caret-color: transparent;
+}
+
+.screen:active,
+.screen:focus {
+	outline: none !important;
+	box-shadow: none !important;
+}
+
+.screen:focus {
+	cursor: url("/kvm/x-cursor.svg") 8 8, crosshair;
+}
+
+.screen:not(:focus) {
+	cursor: pointer;
+}
+
+.pointer-hidden:focus,
+.pointer-relative:focus {
+	cursor: none !important;
+}
+
+.blocking-overlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	pointer-events: none;
+}
+
+.blocking-overlay > * {
+	background-color: #222;
+	color: #fff;
+	padding: 30px 50px;
+	border-radius: 10px;
+	box-shadow: 0px 0px 10px 0px #000;
+	pointer-events: auto;
+}
+
+body[data-usb-attached="1"] .usb-detached-status {
+	display: none;
+}
+
+body[data-usb-attached="0"] .screen {
+	opacity: 50%;
+	pointer-events: none;
+}

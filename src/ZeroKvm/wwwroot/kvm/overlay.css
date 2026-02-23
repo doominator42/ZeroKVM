@@ -1,0 +1,475 @@
+.overlay-drop-area {
+	position: absolute;
+	border-radius: 6px;
+	box-shadow: inset 0px 0px 10px 4px #ddd;
+	background-color: #222;
+	opacity: 50%;
+}
+
+.overlay-area:not(.dragging) ~ .overlay-drop-area,
+.overlay-area.left ~ .overlay-drop-area.left,
+.overlay-area.right ~ .overlay-drop-area.right,
+.overlay-area.top ~ .overlay-drop-area.top,
+.overlay-area.bottom ~ .overlay-drop-area.bottom {
+	display: none;
+}
+
+.overlay-drop-area.left {
+	top: calc(50% - 200px);
+	left: 0;
+	width: 40px;
+	height: 400px;
+	max-height: 80%;
+}
+
+.overlay-drop-area:not(.fixed).left {
+	border-top-left-radius: 0;
+	border-bottom-left-radius: 0;
+}
+
+.overlay-drop-area.right {
+	top: calc(50% - 200px);
+	right: 0;
+	width: 40px;
+	height: 400px;
+	max-height: 80%;
+}
+
+.overlay-drop-area:not(.fixed).right {
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+}
+
+.overlay-drop-area.top {
+	left: calc(50% - 200px);
+	top: 0;
+	width: 400px;
+	max-width: 80%;
+	height: 40px;
+}
+
+.overlay-drop-area:not(.fixed).top {
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
+}
+
+.overlay-drop-area.bottom {
+	left: calc(50% - 200px);
+	bottom: 0;
+	width: 400px;
+	max-width: 80%;
+	height: 40px;
+}
+
+.overlay-drop-area:not(.fixed).bottom {
+	border-bottom-left-radius: 0;
+	border-bottom-right-radius: 0;
+}
+
+/* TODO: :disabled */
+.overlay-buttons button,
+.overlay-grip {
+	appearance: none;
+	outline: none;
+	box-shadow: none;
+	border: 1px solid #ccc;
+	color: #fff;
+	background-color: #5a5a5a;
+	cursor: pointer;
+	user-select: none;
+	box-sizing: border-box;
+	line-height: 1;
+	font-size: 10pt;
+	text-align: center;
+}
+
+.overlay-area.squares .overlay-buttons button {
+	border-radius: 4px;
+	width: 40px;
+	height: 40px;
+	padding: 2px;
+}
+
+.overlay-area.slim.closed .overlay-grip {
+	border-radius: 4px;
+}
+
+.overlay-area.slim:is(.left, .right) .overlay-buttons button,
+.overlay-area.slim:is(.left, .right) .overlay-grip {
+	padding: 4px 2px;
+	min-height: 34px;
+	writing-mode: vertical-lr;
+	min-width: 20px; /* Fix for Firefox mobile: vertical writing-mode squashes the buttons horizontally */
+}
+
+.overlay-area.slim:is(.top, .bottom) .overlay-buttons button,
+.overlay-area.slim:is(.top, .bottom) .overlay-grip {
+	padding: 2px 4px;
+	min-width: 34px;
+}
+
+.overlay-area.slim:is(.left, .right) .overlay-buttons button,
+.overlay-area.slim:not(.closed):is(.left, .right) .overlay-grip {
+	border-left: none;
+	border-right: none;
+}
+
+.overlay-area.slim:is(.top, .bottom) .overlay-buttons button,
+.overlay-area.slim:not(.closed):is(.top, .bottom) .overlay-grip {
+	border-top: none;
+	border-bottom: none;
+}
+
+.overlay-area.slim:is(.left, .right) .overlay-buttons button:not(:first-of-type) {
+	border-top: none;
+}
+
+.overlay-area.slim:is(.top, .bottom) .overlay-buttons button:not(:first-of-type) {
+	border-left: none;
+}
+
+.overlay-area.slim:not(.closed):is(.left, .right) .overlay-grip {
+	border-top: none;
+}
+
+.overlay-area.slim:not(.closed):is(.top, .bottom) .overlay-grip {
+	border-left: none;
+}
+
+.overlay-area.slim .overlay-buttons button:has(img) {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+}
+
+.overlay-buttons button:hover,
+.overlay-grip:hover {
+	background-color: #4f4f4f;
+}
+
+.overlay-buttons button:active,
+.overlay-grip:active {
+	background-color: #404040;
+}
+
+.overlay-buttons button.locked {
+	background-color: #007209;
+}
+
+.overlay-buttons button.locked:hover {
+	background-color: #108219;
+}
+
+.overlay-buttons button.pressed {
+	background-color: #0080bd;
+}
+
+.overlay-buttons button.pressed:hover {
+	background-color: #1090cd;
+}
+
+.overlay-buttons button:disabled {
+	background-color: #5a5a5a;
+	color: #aaa;
+}
+
+.overlay-area.squares .overlay-buttons button > img {
+	display: inline-block;
+	width: 34px;
+	height: 34px;
+}
+
+.overlay-area.slim .overlay-buttons button > img,
+.overlay-area.slim .overlay-grip > img {
+	display: inline-block;
+	width: 16px;
+	height: 16px;
+}
+
+.overlay-area.slim:is(.left, .right) #showToolbarButton > img {
+	transform: rotate(90deg);
+}
+
+.overlay-area {
+	position: absolute;
+	display: flex;
+	justify-content: center;
+	pointer-events: none;
+}
+
+.overlay-area.squares {
+	padding: 4px;
+}
+
+.overlay-area:is(.left, .right) {
+	flex-direction: column;
+}
+
+.overlay-area:is(.top, .bottom) {
+	flex-direction: row;
+}
+
+.overlay-area.left {
+	left: 0;
+	top: 0;
+	bottom: 0;
+}
+
+.overlay-area.squares.fixed.left,
+.overlay-drop-area.fixed.left {
+	left: calc(50% - var(--overlay-distance-left) - 48px);
+}
+
+.overlay-area.slim.fixed.left {
+	left: calc(50% - var(--overlay-distance-left) - 24px);
+}
+
+.overlay-area.right {
+	right: 0;
+	top: 0;
+	bottom: 0;
+}
+
+.overlay-area.squares.fixed.right,
+.overlay-drop-area.fixed.right {
+	right: calc(50% - var(--overlay-distance-right) - 48px);
+}
+
+.overlay-area.slim.fixed.right {
+	right: calc(50% - var(--overlay-distance-right) - 24px);
+}
+
+.overlay-area.top {
+	top: 0;
+	left: 0;
+	right: 0;
+}
+
+.overlay-area.squares.fixed.top,
+.overlay-drop-area.fixed.top {
+	top: calc(50% - var(--overlay-distance-top) - 48px);
+}
+
+.overlay-area.slim.fixed.top {
+	top: calc(50% - var(--overlay-distance-top) - 24px);
+}
+
+.overlay-area.bottom {
+	bottom: 0;
+	left: 0;
+	right: 0;
+}
+
+.overlay-area.squares.fixed.bottom,
+.overlay-drop-area.fixed.bottom {
+	bottom: calc(50% - var(--overlay-distance-bottom) - 48px);
+}
+
+.overlay-area.slim.fixed.bottom {
+	bottom: calc(50% - var(--overlay-distance-bottom) - 24px);
+}
+
+.overlay-area.closed:not(.fixed) {
+	padding: 0;
+}
+
+.overlay-area.closed:not(.fixed) .overlay-buttons {
+	visibility: hidden;
+	transition: visibility 500ms linear 500ms;
+}
+
+.overlay {
+	pointer-events: auto;
+	position: relative;
+}
+
+.overlay-area:is(.left, .right) .overlay {
+	top: clamp(calc(-50% + var(--overlay-offset-clamp-y)), var(--overlay-offset), calc(50% - var(--overlay-offset-clamp-y)));
+}
+
+.overlay-area:is(.top, .bottom) .overlay {
+	left: clamp(calc(-50% + var(--overlay-offset-clamp-x)), var(--overlay-offset), calc(50% - var(--overlay-offset-clamp-x)));
+}
+
+.overlay-area:not(.fixed):not(.dragging) .overlay {
+	opacity: 50%;
+	transition:
+		left 50ms ease-in-out,
+		right 50ms ease-in-out,
+		top 50ms ease-in-out,
+		bottom 50ms ease-in-out,
+		opacity 200ms ease-out 2s;
+}
+
+.overlay-area:not(.fixed):not(.dragging) .overlay:hover {
+	opacity: 1;
+	transition:
+		left 50ms ease-in-out,
+		right 50ms ease-in-out,
+		top 50ms ease-in-out,
+		bottom 50ms ease-in-out,
+		opacity 200ms ease-out 2s,
+		opacity 50ms ease-in;
+}
+
+.overlay-area.slim:not(.fixed):not(.dragging) .overlay {
+	transition: opacity 200ms ease-out 2s;
+}
+
+.overlay-area.slim:not(.fixed):not(.dragging) .overlay:hover {
+	transition:
+		opacity 200ms ease-out 2s,
+		opacity 50ms ease-in;
+}
+
+.overlay-area:not(.closed):not(.fixed).left .overlay {
+	left: 0;
+}
+
+.overlay-area:not(.closed):not(.fixed).right .overlay {
+	right: 0;
+}
+
+.overlay-area:not(.closed):not(.fixed).top .overlay {
+	top: 0;
+}
+
+.overlay-area:not(.closed):not(.fixed).bottom .overlay {
+	bottom: 0;
+}
+
+.overlay-area.closed:not(.fixed).left .overlay {
+	left: -48px;
+}
+
+.overlay-area.closed:not(.fixed).right .overlay {
+	right: -48px;
+}
+
+.overlay-area.closed:not(.fixed).top .overlay {
+	top: -48px;
+}
+
+.overlay-area.closed:not(.fixed).bottom .overlay {
+	bottom: -48px;
+}
+
+.overlay-area.slim.closed:not(.fixed).left .overlay-grip {
+	left: 42px;
+}
+
+.overlay-area.slim.closed:not(.fixed).right .overlay-grip {
+	right: 42px;
+}
+
+.overlay-area.slim.closed:not(.fixed).top .overlay-grip {
+	top: 42px;
+}
+
+.overlay-area.slim.closed:not(.fixed).bottom .overlay-grip {
+	bottom: 42px;
+}
+
+.overlay-area.slim .overlay {
+	display: flex;
+}
+
+.overlay-area.slim:is(.left, .right) .overlay {
+	flex-direction: column;
+}
+
+.overlay-area.slim:is(.top, .bottom) .overlay {
+	flex-direction: row;
+}
+
+.overlay-area.squares .overlay-grip {
+	position: absolute;
+	border-radius: 3px;
+	padding: 0;
+	display: flex;
+	align-items: stretch;
+	justify-content: center;
+}
+
+.overlay-area.slim .overlay-grip {
+	position: relative;
+	display: flex;
+	align-items: stretch;
+	justify-content: center;
+}
+
+.overlay-area.fixed .overlay-grip {
+	visibility: hidden;
+	pointer-events: none;
+}
+
+.overlay-area.squares .overlay-grip > img {
+	margin: -3px;
+}
+
+.overlay-area.closed.top .overlay-grip > img,
+.overlay-area:not(.closed).bottom .overlay-grip > img {
+	transform: rotate(90deg);
+}
+
+.overlay-area.closed.right .overlay-grip > img,
+.overlay-area:not(.closed).left .overlay-grip > img {
+	transform: rotate(180deg);
+}
+
+.overlay-area.closed.bottom .overlay-grip > img,
+.overlay-area:not(.closed).top .overlay-grip > img {
+	transform: rotate(-90deg);
+}
+
+.overlay-buttons {
+	display: flex;
+}
+
+.overlay-area.squares .overlay-buttons {
+	gap: 4px;
+}
+
+.overlay-area:is(.left, .right) .overlay-buttons,
+.overlay-area:is(.left, .right) .overlay-grip {
+	flex-direction: column;
+}
+
+.overlay-area:is(.top, .bottom) .overlay-buttons,
+.overlay-area:is(.top, .bottom) .overlay-grip {
+	flex-direction: row;
+}
+
+.overlay-area.squares:is(.left, .right) .overlay-grip {
+	width: 14px;
+	height: 48px;
+	top: calc(50% - 24px);
+}
+
+.overlay-area.squares:is(.top, .bottom) .overlay-grip {
+	width: 48px;
+	height: 14px;
+	left: calc(50% - 24px);
+}
+
+.overlay-area.squares.left .overlay-grip {
+	right: -18px;
+}
+
+.overlay-area.squares.right .overlay-grip {
+	left: -18px;
+}
+
+.overlay-area.squares.top .overlay-grip {
+	bottom: -18px;
+}
+
+.overlay-area.squares.bottom .overlay-grip {
+	top: -18px;
+}
+
+.overlay-area.squares .slim,
+.overlay-area.slim .squares {
+	display: none;
+}

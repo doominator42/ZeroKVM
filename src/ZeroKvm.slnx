@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="ZeroKvm/ZeroKvm.csproj" />
+  <Project Path="UsbFfs/UsbFfs.csproj" />
+</Solution>

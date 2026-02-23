@@ -1,0 +1,32 @@
+diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
+index 301a435b9ee3..eaccecfbd858 100644
+--- a/drivers/usb/gadget/composite.c
++++ b/drivers/usb/gadget/composite.c
+@@ -1905,6 +1905,12 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
+ 				memcpy(req->buf, config->descriptors[0], value);
+ 			}
+ 			break;
++
++		default:
++			/* let the usb_function's setup handle vendor descriptors */
++			if (((w_value >> 8) & USB_TYPE_MASK) == USB_TYPE_VENDOR)
++				goto unknown;
++			break;
+ 		}
+ 		break;
+ 
+diff --git a/drivers/usb/gadget/function/f_fs.c b/drivers/usb/gadget/function/f_fs.c
+index 92c883440e02..c0679add7d45 100644
+--- a/drivers/usb/gadget/function/f_fs.c
++++ b/drivers/usb/gadget/function/f_fs.c
+@@ -2601,6 +2601,10 @@ static int __must_check ffs_do_single_desc(char *data, unsigned len,
+ 		return -EINVAL;
+ 
+ 	default:
++		/* Accept any vendor descriptors */
++		if ((_ds->bDescriptorType & USB_TYPE_MASK) == USB_TYPE_VENDOR)
++			return length;
++
+ 		/* We should never be here */
+ 		pr_vdebug("unknown descriptor: %d\n", _ds->bDescriptorType);
+ 		return -EINVAL;

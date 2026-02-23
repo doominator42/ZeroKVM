@@ -1,0 +1,8 @@
+<Project>
+  <ItemGroup>
+    <Using Include="System" />
+    <Using Include="System.Threading" />
+    <Using Include="System.Threading.Tasks" />
+    <Using Include="System.Collections.Generic" />
+  </ItemGroup>
+</Project>

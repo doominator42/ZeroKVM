@@ -1,0 +1,11 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine3.23-aot-arm64v8 AS build
+ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
+RUN apk add --update --no-cache \
+    libaio-dev \
+    libjpeg-turbo-static
+COPY . /src
+WORKDIR /src
+RUN dotnet publish -r linux-musl-arm64 ./ZeroKvm/ZeroKvm.csproj -o /out
+
+FROM scratch
+COPY --from=build /out/ /linux-musl-arm64
