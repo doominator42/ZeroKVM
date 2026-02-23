@@ -40,8 +40,8 @@ Implement features works well. The web client still needs a bit of polishing and
 - Does not work for pre-boot management like BIOS or OS installation/repair where the DisplayLink driver cannot run
 
 ## Installation
-- For Debian, Ubuntu, RPiOS or other distro based on SystemD, see [systemd](./systemd/readme.md)
-- For OpenWRT, see [openwrt](./openwrt/readme.md)
+- For Debian, Ubuntu, RPiOS or other distro based on SystemD, see [systemd](./systemd)
+- For OpenWRT, see [openwrt](./openwrt)
 
 ## Hardware requirements
 - Board with a USB device/OTG controller
