@@ -13,4 +13,9 @@ if [ -z "$repo_dir" ]; then
 fi
 
 mkdir -p "$repo_dir/bin"
-sudo docker build -f "$repo_dir/src/Dockerfile.$1" --platform linux/arm64 --pull -o - "$repo_dir/src" | tar -C "$repo_dir/bin" -x --no-same-owner --overwrite
+sudo docker build -f "$repo_dir/src/Dockerfile.$1" \
+	--platform linux/arm64 \
+	--pull \
+	-o - \
+	"$repo_dir/src" |
+	tar -C "$repo_dir/bin" -x --no-same-owner --overwrite

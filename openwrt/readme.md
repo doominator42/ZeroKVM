@@ -21,3 +21,4 @@
   service zerokvm enable
   service zerokvm start
   ```
+- The web GUI will be accessible at `https://DEVICE_IP/`

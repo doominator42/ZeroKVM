@@ -14,3 +14,4 @@
   systemctl enable zerokvm
   systemctl start zerokvm
   ```
+- The web GUI will be accessible at `https://DEVICE_IP/`

@@ -7,6 +7,7 @@
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PublishAot>true</PublishAot>
+    <IsAotCompatible>true</IsAotCompatible>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>full</TrimMode>
     <DebuggerSupport>false</DebuggerSupport>
@@ -17,9 +18,7 @@
     <MetadataUpdaterSupport>false</MetadataUpdaterSupport>
     <MetricsSupport>false</MetricsSupport>
     <UseSizeOptimizedLinq>true</UseSizeOptimizedLinq>
-    <IlcDisableReflection>true</IlcDisableReflection>
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
-    <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
     <StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>
     <StripSymbols>true</StripSymbols>
