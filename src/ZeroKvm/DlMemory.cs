@@ -14,7 +14,7 @@ internal class DlMemory
     public DlMemory()
     {
         _ram = GC.AllocateArray<byte>(64 * 1024, true);
-        _frameBuffer = GC.AllocateUninitializedArray<byte>((16 * 1024 * 1024) + 256, true); // 256 more bytes to allow overflowing commands
+        _frameBuffer = GC.AllocateUninitializedArray<byte>((20 * 1024 * 1024) + 256, true); // 256 more bytes to allow overflowing commands
         MemoryMarshal.Cast<byte, ushort>(_frameBuffer.AsSpan()).Fill(0b0000011111100000);
         _frameBufferDiff16 = GC.AllocateArray<ushort>(MaxPixels, true);
         _frameBufferDiff8 = GC.AllocateArray<byte>(MaxPixels, true);
@@ -26,6 +26,12 @@ internal class DlMemory
     public RgbColorDepth ColorDepth => (RgbColorDepth)_ram[RegisterMemoryOffset + (int)DlRegisterAddress.ColorDepth];
 
     public bool BlankOutput => _ram[RegisterMemoryOffset + (int)DlRegisterAddress.BlankOutput] != 0;
+    public int HorizontalResolution => _horizontalResolution;
+    public int VerticalResolution => _verticalResolution;
+    public int FrameBuffer16BaseOffset => _fb16BaseOffset;
+    public int FrameBuffer16LineStride => _fb16LineStride;
+    public int FrameBuffer8BaseOffset => _fb8BaseOffset;
+    public int FrameBuffer8LineStride => _fb8LineStride;
 
     private int _horizontalResolution;
     private int _verticalResolution;
@@ -105,21 +111,38 @@ internal class DlMemory
 
         int width = _horizontalResolution;
         int height = _verticalResolution;
-        ReadOnlySpan<ushort> fb16 = MemoryMarshal.Cast<byte, ushort>(_frameBuffer.AsSpan(_fb16BaseOffset, lineStride * height * 2));
-        var (modifiedX1, modifiedY1, modifiedX2, modifiedY2) = ColorDepth == RgbColorDepth.Rgb24Bits ?
-            CopyPixels24(
+        int fb16Size = lineStride * height * 2;
+        if (_fb16BaseOffset < 0 || (long)_fb16BaseOffset + fb16Size > _frameBuffer.Length)
+        {
+            return default;
+        }
+
+        ReadOnlySpan<ushort> fb16 = MemoryMarshal.Cast<byte, ushort>(_frameBuffer.AsSpan(_fb16BaseOffset, fb16Size));
+        int modifiedX1, modifiedY1, modifiedX2, modifiedY2;
+        if (ColorDepth == RgbColorDepth.Rgb24Bits)
+        {
+            int fb8Size = lineStride * height;
+            if (_fb8BaseOffset < 0 || (long)_fb8BaseOffset + fb8Size > _frameBuffer.Length)
+            {
+                return default;
+            }
+            (modifiedX1, modifiedY1, modifiedX2, modifiedY2) = CopyPixels24(
                 fb16,
                 _frameBufferDiff16,
                 lineStride,
-                _frameBuffer.AsSpan(_fb8BaseOffset, lineStride * height),
+                _frameBuffer.AsSpan(_fb8BaseOffset, fb8Size),
                 _frameBufferDiff8,
                 _fb8LineStride,
-                fb) :
-            CopyPixels16(
+                fb);
+        }
+        else
+        {
+            (modifiedX1, modifiedY1, modifiedX2, modifiedY2) = CopyPixels16(
                 fb16,
                 _frameBufferDiff16,
                 lineStride,
                 fb);
+        }
 
         return new()
         {
@@ -159,6 +182,29 @@ internal class DlMemory
             ModifiedX2 = (ushort)modifiedX2,
             ModifiedY2 = (ushort)modifiedY2,
         };
+    }
+
+    public void CopyFrameBuffer16To(Span<ushort> fb, int stridePixels)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(stridePixels, 1);
+
+        int lineStride = _fb16LineStride / 2;
+        int width = _horizontalResolution;
+        int height = _verticalResolution;
+        if (lineStride <= 0 || width <= 0 || height <= 0)
+        {
+            return;
+        }
+
+        int copyWidth = Math.Min(width, stridePixels);
+        ArgumentOutOfRangeException.ThrowIfLessThan(fb.Length, stridePixels * height);
+
+        ReadOnlySpan<ushort> source = MemoryMarshal.Cast<byte, ushort>(_frameBuffer.AsSpan(_fb16BaseOffset, lineStride * height * 2));
+        for (int y = 0; y < height; y++)
+        {
+            source.Slice(y * lineStride, copyWidth)
+                .CopyTo(fb.Slice(y * stridePixels, copyWidth));
+        }
     }
 
     private static (int X1, int Y1, int X2, int Y2) CopyPixels16(
@@ -306,9 +352,64 @@ internal class DlMemory
         int lineStride8,
         Span<uint> destination)
     {
-        // TODO
-        Console.WriteLine($"{nameof(CopyPixels24)}({source16.Length}, {sourceDiff16.Length}, {lineStride16}, {source8.Length}, {sourceDiff8.Length}, {lineStride8}, {destination.Length})");
-        throw new NotImplementedException();
+        // Combine the 16-bit plane (RGB565, providing MSBs of each channel) with the
+        // 8-bit plane (RGB323, providing LSBs).  The per-channel merge is:
+        //   R8 = R565<<3 | R323   (5+3 = 8 bits)
+        //   G8 = G565<<2 | G323   (6+2 = 8 bits)
+        //   B8 = B565<<3 | B323   (5+3 = 8 bits)
+        // Output format is XBGR8888 (matching Rgb565LeToRgbx): B at bits 23:16,
+        // G at bits 15:8, R at bits 7:0.
+        int height = source16.Length / lineStride16;
+        int x1 = ushort.MaxValue;
+        int y1 = 0;
+        int x2 = 0;
+        int y2 = 0;
+
+        for (int y = 0; y < height; y++)
+        {
+            int base16 = y * lineStride16;
+            int base8 = y * lineStride8;
+            int lineX1 = -1;
+            int lineX2 = -1;
+
+            for (int x = 0; x < lineStride16; x++)
+            {
+                ushort px16 = source16[base16 + x];
+                byte px8 = source8[base8 + x];
+
+                if (px16 != sourceDiff16[base16 + x] || px8 != sourceDiff8[base8 + x])
+                {
+                    sourceDiff16[base16 + x] = px16;
+                    sourceDiff8[base8 + x] = px8;
+
+                    uint r8 = (((uint)px16 >> 8) & 0xF8u) | ((uint)px8 >> 5);
+                    uint g8 = (((uint)px16 >> 3) & 0xFCu) | (((uint)px8 >> 3) & 0x03u);
+                    uint b8 = (((uint)px16 << 3) & 0xF8u) | ((uint)px8 & 0x07u);
+
+                    destination[base16 + x] = (b8 << 16) | (g8 << 8) | r8;
+
+                    if (lineX1 < 0) lineX1 = x;
+                    lineX2 = x + 1;
+                }
+            }
+
+            if (lineX1 >= 0)
+            {
+                if (lineX1 < x1) x1 = lineX1;
+                if (lineX2 > x2) x2 = lineX2;
+                if (y2 == 0)
+                {
+                    y1 = y;
+                    y2 = y + 1;
+                }
+                else
+                {
+                    y2 = y + 1;
+                }
+            }
+        }
+
+        return (x1, y1, x2, y2);
     }
 
     public readonly struct DecompLookupEntry

@@ -20,6 +20,17 @@ internal static class ColorConvert
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe void Rgb565LeToRgbx(Vector128<ushort> rgb565, ref Vector256<uint> destination)
     {
+        if (!AdvSimd.Arm64.IsSupported)
+        {
+            ref uint scalarDestination = ref Unsafe.As<Vector256<uint>, uint>(ref destination);
+            for (int i = 0; i < Vector128<ushort>.Count; i++)
+            {
+                Unsafe.Add(ref scalarDestination, i) = Rgb565LeToRgbx(rgb565.GetElement(i));
+            }
+
+            return;
+        }
+
         Vector128<ushort> redBlue = AdvSimd.ShiftRightAndInsert(rgb565 << 8, rgb565, 11);
         redBlue = (redBlue.AsByte() << 3).AsUInt16();
         Vector128<ushort> green = AdvSimd.ShiftLeftLogicalWideningLower(AdvSimd.ShiftRightLogicalNarrowingLower(rgb565, 5), 2);
@@ -29,6 +40,20 @@ internal static class ColorConvert
 
     public static unsafe void CopyRgb565LeToRgbx(ref ushort source, ref uint destination, nint count)
     {
+        if (!AdvSimd.Arm64.IsSupported)
+        {
+            ref ushort sourceEndScalar = ref Unsafe.Add(ref source, count);
+            while (Unsafe.IsAddressLessThan(ref source, ref sourceEndScalar))
+            {
+                ushort sourcePixel = source;
+                source = ref Unsafe.Add(ref source, 1);
+                destination = Rgb565LeToRgbx(sourcePixel);
+                destination = ref Unsafe.Add(ref destination, 1);
+            }
+
+            return;
+        }
+
         ref ushort sourceEnd = ref Unsafe.Add(ref source, count);
         ref ushort sourceVectorEnd = ref Unsafe.Add(ref source, count - (count % Vector128<ushort>.Count));
         while (Unsafe.IsAddressLessThan(ref source, ref sourceVectorEnd))
@@ -55,6 +80,22 @@ internal static class ColorConvert
 
     public static ushort CopyRgb565BeToRgb565Le(ref ushort source, ref ushort destination, nint count)
     {
+        if (!AdvSimd.IsSupported)
+        {
+            ref ushort sourceEndScalar = ref Unsafe.Add(ref source, count);
+            ushort pixelScalar = 0;
+
+            while (Unsafe.IsAddressLessThan(ref source, ref sourceEndScalar))
+            {
+                pixelScalar = source;
+                source = ref Unsafe.Add(ref source, 1);
+                destination = BinaryPrimitives.ReverseEndianness(pixelScalar);
+                destination = ref Unsafe.Add(ref destination, 1);
+            }
+
+            return pixelScalar;
+        }
+
         ref ushort sourceEnd = ref Unsafe.Add(ref source, count);
         ref ushort sourceVector128End = ref Unsafe.Subtract(ref sourceEnd, count % Vector128<ushort>.Count);
         Vector128<ushort> pixels128 = default;

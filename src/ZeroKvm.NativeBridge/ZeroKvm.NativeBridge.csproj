@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PublishAot>true</PublishAot>
+    <SelfContained>true</SelfContained>
+    <NativeLib>Shared</NativeLib>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <DebuggerSupport>false</DebuggerSupport>
+    <EventSourceSupport>false</EventSourceSupport>
+    <MetadataUpdaterSupport>false</MetadataUpdaterSupport>
+    <MetricsSupport>false</MetricsSupport>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+    <StripSymbols>true</StripSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../ZeroKvm/ColorConvert.cs" Link="ColorConvert.cs" />
+    <Compile Include="../ZeroKvm/DlDecoder.cs" Link="DlDecoder.cs" />
+    <Compile Include="../ZeroKvm/DlMemory.cs" Link="DlMemory.cs" />
+    <Compile Include="../ZeroKvm/DlRegisterAddress.cs" Link="DlRegisterAddress.cs" />
+    <Compile Include="../ZeroKvm/FrameArea.cs" Link="FrameArea.cs" />
+    <Compile Include="../ZeroKvm/Logger.cs" Link="Logger.cs" />
+    <Compile Include="../ZeroKvm/RgbColorDepth.cs" Link="RgbColorDepth.cs" />
+  </ItemGroup>
+</Project>
