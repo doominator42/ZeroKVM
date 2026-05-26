@@ -175,8 +175,13 @@ internal class DlMemory
 
         int width = _horizontalResolution;
         int height = _verticalResolution;
+        int fb16Size = lineStride * height * 2;
+        if (_fb16BaseOffset < 0 || (long)_fb16BaseOffset + fb16Size > _frameBuffer.Length)
+        {
+            return default;
+        }
         var (modifiedX1, modifiedY1, modifiedX2, modifiedY2) = CopyPixels16(
-            MemoryMarshal.Cast<byte, ushort>(_frameBuffer.AsSpan(_fb16BaseOffset, lineStride * height * 2)),
+            MemoryMarshal.Cast<byte, ushort>(_frameBuffer.AsSpan(_fb16BaseOffset, fb16Size)),
             _frameBufferDiff16,
             lineStride,
             lineStride,
@@ -206,10 +211,16 @@ internal class DlMemory
             return;
         }
 
-        int copyWidth = Math.Min(width, stridePixels);
+        int copyWidth = Math.Min(Math.Min(width, stridePixels), lineStride);
         ArgumentOutOfRangeException.ThrowIfLessThan(fb.Length, stridePixels * height);
 
-        ReadOnlySpan<ushort> source = MemoryMarshal.Cast<byte, ushort>(_frameBuffer.AsSpan(_fb16BaseOffset, lineStride * height * 2));
+        int fb16Size = lineStride * height * 2;
+        if (_fb16BaseOffset < 0 || (long)_fb16BaseOffset + fb16Size > _frameBuffer.Length)
+        {
+            return;
+        }
+
+        ReadOnlySpan<ushort> source = MemoryMarshal.Cast<byte, ushort>(_frameBuffer.AsSpan(_fb16BaseOffset, fb16Size));
         for (int y = 0; y < height; y++)
         {
             source.Slice(y * lineStride, copyWidth)
