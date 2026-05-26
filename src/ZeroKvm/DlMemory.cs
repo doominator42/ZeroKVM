@@ -102,9 +102,15 @@ internal class DlMemory
 
     public FrameArea CopyFrameBufferTo(Span<uint> fb)
     {
+        int lineStride = _fb16LineStride / 2;
+        return CopyFrameBufferTo(fb, lineStride);
+    }
+
+    public FrameArea CopyFrameBufferTo(Span<uint> fb, int stridePixels)
+    {
         // TODO: properly handle different line strides for 16 and 8 bits buffers
         int lineStride = _fb16LineStride / 2;
-        if (lineStride <= 0)
+        if (lineStride <= 0 || stridePixels <= 0)
         {
             return default;
         }
@@ -116,6 +122,7 @@ internal class DlMemory
         {
             return default;
         }
+        ArgumentOutOfRangeException.ThrowIfLessThan(fb.Length, checked(stridePixels * height));
 
         ReadOnlySpan<ushort> fb16 = MemoryMarshal.Cast<byte, ushort>(_frameBuffer.AsSpan(_fb16BaseOffset, fb16Size));
         int modifiedX1, modifiedY1, modifiedX2, modifiedY2;
@@ -133,6 +140,7 @@ internal class DlMemory
                 _frameBuffer.AsSpan(_fb8BaseOffset, fb8Size),
                 _frameBufferDiff8,
                 _fb8LineStride,
+                stridePixels,
                 fb);
         }
         else
@@ -141,6 +149,7 @@ internal class DlMemory
                 fb16,
                 _frameBufferDiff16,
                 lineStride,
+                stridePixels,
                 fb);
         }
 
@@ -169,6 +178,7 @@ internal class DlMemory
         var (modifiedX1, modifiedY1, modifiedX2, modifiedY2) = CopyPixels16(
             MemoryMarshal.Cast<byte, ushort>(_frameBuffer.AsSpan(_fb16BaseOffset, lineStride * height * 2)),
             _frameBufferDiff16,
+            lineStride,
             lineStride,
             fb);
 
@@ -211,11 +221,12 @@ internal class DlMemory
         ReadOnlySpan<ushort> source,
         Span<ushort> sourceDiff,
         int lineStride,
+        int destinationStride,
         Span<uint> destination)
     {
         ArgumentOutOfRangeException.ThrowIfZero(source.Length);
         ArgumentOutOfRangeException.ThrowIfLessThan(sourceDiff.Length, source.Length);
-        ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, source.Length);
+        ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, checked(destinationStride * (source.Length / lineStride)));
         ArgumentOutOfRangeException.ThrowIfLessThan(lineStride, 16);
 
         int x1 = ushort.MaxValue;
@@ -227,12 +238,13 @@ internal class DlMemory
         ref uint destinationRef = ref MemoryMarshal.GetReference(destination);
         int length = source.Length;
         int vectorLineLength = lineStride - (lineStride % Vector128<ushort>.Count);
-        for (int i = 0; i < length; i += lineStride)
+        for (int i = 0, y = 0; i < length; i += lineStride, y++)
         {
+            ref uint lineDestinationRef = ref Unsafe.Add(ref destinationRef, y * destinationStride);
             (int lineX1, int lineX2) = CopyLine16(
                 ref Unsafe.Add(ref sourceRef, i),
                 ref Unsafe.Add(ref sourceDiffRef, i),
-                ref Unsafe.Add(ref destinationRef, i),
+                ref lineDestinationRef,
                 lineStride,
                 vectorLineLength);
 
@@ -350,6 +362,7 @@ internal class DlMemory
         ReadOnlySpan<byte> source8,
         Span<byte> sourceDiff8,
         int lineStride8,
+        int destinationStride,
         Span<uint> destination)
     {
         // Combine the 16-bit plane (RGB565, providing MSBs of each channel) with the
@@ -364,11 +377,13 @@ internal class DlMemory
         int y1 = 0;
         int x2 = 0;
         int y2 = 0;
+        ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, checked(destinationStride * height));
 
         for (int y = 0; y < height; y++)
         {
             int base16 = y * lineStride16;
             int base8 = y * lineStride8;
+            int baseDst = y * destinationStride;
             int lineX1 = -1;
             int lineX2 = -1;
 
@@ -386,7 +401,7 @@ internal class DlMemory
                     uint g8 = (((uint)px16 >> 3) & 0xFCu) | (((uint)px8 >> 3) & 0x03u);
                     uint b8 = (((uint)px16 << 3) & 0xF8u) | ((uint)px8 & 0x07u);
 
-                    destination[base16 + x] = (b8 << 16) | (g8 << 8) | r8;
+                    destination[baseDst + x] = (b8 << 16) | (g8 << 8) | r8;
 
                     if (lineX1 < 0) lineX1 = x;
                     lineX2 = x + 1;

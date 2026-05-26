@@ -110,7 +110,7 @@ public static unsafe class NativeExports
             if (xrgb8888 is not null && xrgb8888StridePixels != 0)
             {
                 Span<uint> xrgb = new(xrgb8888, checked((int)(xrgb8888StridePixels * (uint)context.MaxHeight)));
-                frameArea = memory.CopyFrameBufferTo(xrgb);
+                frameArea = memory.CopyFrameBufferTo(xrgb, checked((int)xrgb8888StridePixels));
             }
             else
             {
