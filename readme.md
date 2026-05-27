@@ -26,7 +26,7 @@ Implemented features works well. The web client still needs a bit of polishing a
 |Web client|✅|
 |8 bits color depth|Planned|
 |16 bits color depth|✅|
-|24 bits color depth|Planned|
+|24 bits color depth|✅|
 |HTTP Basic Authentication|Planned|
 |RNDIS Ethernet gadget|Planned|
 |CDC-ECM Ethernet gadget|Planned|
@@ -83,6 +83,10 @@ dotnet publish -r linux-arm64 src/ZeroKvm -o bin/linux-arm64
 # For OpenWRT, Alpine Linux or other distros based on musl-libc
 dotnet publish -r linux-musl-arm64 src/ZeroKvm -o bin/linux-musl-arm64
 ```
+
+## Using as a library
+
+ZeroKVM can be compiled as a native shared library for use with C or C# applications that need to spoof the sink end of the DisplayLink protocol. See [NativeBridge](./src/ZeroKvm.NativeBridge) for more information.
 
 ## License
 
