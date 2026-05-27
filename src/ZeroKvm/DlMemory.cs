@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 
 namespace ZeroKvm;
 
@@ -390,6 +391,13 @@ internal class DlMemory
         int y2 = 0;
         ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, checked(destinationStride * height));
 
+        ref ushort src16Ref = ref MemoryMarshal.GetReference(source16);
+        ref ushort diff16Ref = ref MemoryMarshal.GetReference(sourceDiff16);
+        ref byte src8Ref = ref MemoryMarshal.GetReference(source8);
+        ref byte diff8Ref = ref MemoryMarshal.GetReference(sourceDiff8);
+        ref uint dstRef = ref MemoryMarshal.GetReference(destination);
+        bool useNeon = AdvSimd.Arm64.IsSupported;
+
         for (int y = 0; y < height; y++)
         {
             int base16 = y * lineStride16;
@@ -397,22 +405,74 @@ internal class DlMemory
             int baseDst = y * destinationStride;
             int lineX1 = -1;
             int lineX2 = -1;
+            int x = 0;
 
-            for (int x = 0; x < lineStride16; x++)
+            if (useNeon)
             {
-                ushort px16 = source16[base16 + x];
-                byte px8 = source8[base8 + x];
-
-                if (px16 != sourceDiff16[base16 + x] || px8 != sourceDiff8[base8 + x])
+                for (; x <= lineStride16 - 8; x += 8)
                 {
-                    sourceDiff16[base16 + x] = px16;
-                    sourceDiff8[base8 + x] = px8;
+                    ref ushort src16 = ref Unsafe.Add(ref src16Ref, base16 + x);
+                    ref ushort diff16 = ref Unsafe.Add(ref diff16Ref, base16 + x);
+                    ref byte src8 = ref Unsafe.Add(ref src8Ref, base8 + x);
+                    ref byte diff8 = ref Unsafe.Add(ref diff8Ref, base8 + x);
+
+                    Vector128<ushort> v16 = Unsafe.As<ushort, Vector128<ushort>>(ref src16);
+                    Vector128<ushort> d16 = Unsafe.As<ushort, Vector128<ushort>>(ref diff16);
+                    Vector64<byte> v8 = Unsafe.As<byte, Vector64<byte>>(ref src8);
+                    Vector64<byte> d8 = Unsafe.As<byte, Vector64<byte>>(ref diff8);
+
+                    if (Vector128.EqualsAll(v16, d16) &&
+                        v8.AsUInt64().ToScalar() == d8.AsUInt64().ToScalar())
+                    {
+                        continue;
+                    }
+
+                    Unsafe.As<ushort, Vector128<ushort>>(ref diff16) = v16;
+                    Unsafe.As<byte, Vector64<byte>>(ref diff8) = v8;
+
+                    Vector128<ushort> px8_u16 = AdvSimd.ZeroExtendWideningLower(v8);
+                    Vector128<uint> px8_u32_lo = AdvSimd.ZeroExtendWideningLower(px8_u16.GetLower());
+                    Vector128<uint> px8_u32_hi = AdvSimd.ZeroExtendWideningLower(px8_u16.GetUpper());
+
+                    // px8 bit layout: r2r1r0 g1g0 b2b1b0 → fill lower bits of each 8-bit channel
+                    Vector128<uint> contrib_lo =
+                        ((px8_u32_lo >> 5) & Vector128.Create(0x07u)) |
+                        (((px8_u32_lo >> 3) & Vector128.Create(0x03u)) << 8) |
+                        ((px8_u32_lo & Vector128.Create(0x07u)) << 16);
+                    Vector128<uint> contrib_hi =
+                        ((px8_u32_hi >> 5) & Vector128.Create(0x07u)) |
+                        (((px8_u32_hi >> 3) & Vector128.Create(0x03u)) << 8) |
+                        ((px8_u32_hi & Vector128.Create(0x07u)) << 16);
+
+                    Vector256<uint> rgbx = default;
+                    ColorConvert.Rgb565LeToRgbx(v16, ref rgbx);
+                    Vector128<uint> rgbxLo = Unsafe.As<Vector256<uint>, Vector128<uint>>(ref rgbx);
+                    Vector128<uint> rgbxHi = Unsafe.Add(ref Unsafe.As<Vector256<uint>, Vector128<uint>>(ref rgbx), 1);
+
+                    Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref dstRef, baseDst + x)) = rgbxLo | contrib_lo;
+                    Unsafe.As<uint, Vector128<uint>>(ref Unsafe.Add(ref dstRef, baseDst + x + 4)) = rgbxHi | contrib_hi;
+
+                    if (lineX1 < 0) lineX1 = x;
+                    lineX2 = x + 8;
+                }
+            }
+
+            // Scalar path for tail (and full loop on non-NEON)
+            for (; x < lineStride16; x++)
+            {
+                ushort px16 = Unsafe.Add(ref src16Ref, base16 + x);
+                byte px8 = Unsafe.Add(ref src8Ref, base8 + x);
+
+                if (px16 != Unsafe.Add(ref diff16Ref, base16 + x) ||
+                    px8 != Unsafe.Add(ref diff8Ref, base8 + x))
+                {
+                    Unsafe.Add(ref diff16Ref, base16 + x) = px16;
+                    Unsafe.Add(ref diff8Ref, base8 + x) = px8;
 
                     uint r8 = (((uint)px16 >> 8) & 0xF8u) | ((uint)px8 >> 5);
                     uint g8 = (((uint)px16 >> 3) & 0xFCu) | (((uint)px8 >> 3) & 0x03u);
                     uint b8 = (((uint)px16 << 3) & 0xF8u) | ((uint)px8 & 0x07u);
-
-                    destination[baseDst + x] = (b8 << 16) | (g8 << 8) | r8;
+                    Unsafe.Add(ref dstRef, baseDst + x) = (b8 << 16) | (g8 << 8) | r8;
 
                     if (lineX1 < 0) lineX1 = x;
                     lineX2 = x + 1;
